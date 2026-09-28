@@ -3,6 +3,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/snapshot.ts": { "maxDuration": 15 },
-    "api/rated.ts": { "maxDuration": 15 }
+    "api/rated.ts": { "maxDuration": 15 },
+    "api/performance.ts": { "maxDuration": 15 }
   }
 }
