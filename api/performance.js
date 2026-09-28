@@ -32,7 +32,7 @@ async function fetchAttestations(index, token) {
 
 export default async function handler(req, res) {
   try {
-    const token = process.env.RATED_API_KEY;
+    const token = process.env.RATED_API_KEY?.trim().replace(/^Bearer\s+/i, '');
     const indices = requestedIndices(req.query?.indices);
     if (!token) return res.status(200).json({ available: false, reason: 'RATED_API_KEY is not configured', metrics: {} });
     if (!indices.length) return res.status(400).json({ available: false, reason: 'No validator indices were supplied', metrics: {} });
