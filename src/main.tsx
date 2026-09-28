@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
+import Dashboard from './dashboard';
 type Validator = {pubkey:string;friendly_name:string;approved_destination?:string|null;validator_index:string|null;lifecycle_status:string|null;balanceEth:string|null;effectiveBalanceEth:string|null;credentials:{type:string;address:string|null}|null;withdrawal_credentials:string|null;slashed:boolean|null;activation_epoch:string|null;exit_epoch:string|null;withdrawable_epoch:string|null;observed_at:string|null;slot:string|null;source:string|null;finalized:boolean|null;freshness:string};
 type Incident={id:number;severity:string;title:string;detail:string;pubkey:string|null;first_observed_at:string;last_observed_at:string;acknowledged_at:string|null;resolved_at:string|null;evidence:string|null};
 type Snapshot={mode:string;source:string;provider:string;run:any;validators:Validator[];incidents:Incident[];gaps?:{start_at:string;end_at:string;reason:string}[];capabilities:Record<string,string>};
@@ -56,4 +57,4 @@ function App(){
 }
 function Metric({label,value,sub}:{label:string;value:string;sub:string}){return <div className="metric"><span>{label}</span><strong>{value}</strong><small>{sub}</small></div>}
 function ValidatorTable({rows,onOpen,sort,setSort}:{rows:Validator[];onOpen:(v:Validator)=>void;sort:string;setSort:(x:string)=>void}){return <div className="tablewrap"><table><thead><tr><th><button onClick={()=>setSort('name')}>Validator {sort==='name'?'▾':''}</button></th><th>Index / key</th><th><button onClick={()=>setSort('status')}>Lifecycle {sort==='status'?'▾':''}</button></th><th><button onClick={()=>setSort('balance')}>Balance {sort==='balance'?'▾':''}</button></th><th>Effective</th><th>Freshness</th></tr></thead><tbody>{rows.map(v=><tr key={v.pubkey} onClick={()=>onOpen(v)} tabIndex={0} onKeyDown={e=>{if(e.key==='Enter')onOpen(v)}}><td><b>{v.friendly_name}</b></td><td className="mono">{v.validator_index??'—'}<small>{short(v.pubkey)}</small></td><td><span className={'pill '+(v.lifecycle_status?.startsWith('active')?'good':'muted')}>{v.lifecycle_status?.replaceAll('_',' ')||'Not found'}</span></td><td>{v.balanceEth?`${v.balanceEth} ETH`:'—'}</td><td>{v.effectiveBalanceEth?`${v.effectiveBalanceEth} ETH`:'—'}</td><td><span className={'fresh '+v.freshness}>{v.freshness.replaceAll('_',' ')}</span></td></tr>)}</tbody></table>{rows.length===0&&<div className="empty">No validators in the watchlist.</div>}</div>}
-createRoot(document.getElementById('root')!).render(<App/>);
+createRoot(document.getElementById('root')!).render(<Dashboard/>);
