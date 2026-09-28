@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './monitor.css';
+import './detail.css';
 
 type Watch = { name: string; pubkey: string; group: 'Your fleet' | 'Demo validators' };
 type Validator = Watch & { index: string | null; status: string | null; balance: string | null; effective: string | null; credentials: string | null; slashed: boolean | null; observedAt: string | null; freshness: 'fresh' | 'not_found' | 'failed' | 'loading' };
