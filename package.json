@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "db:local": "pglite-server --db=./.local-db --port=5433 --max-connections=8",
+    "dev:local": "npm run build && node --experimental-strip-types server/local.ts",
     "dev": "npm run build && node --watch --env-file-if-exists=.env --experimental-strip-types server/index.ts",
     "server": "node --env-file-if-exists=.env --experimental-strip-types server/index.ts",
     "collector": "node --env-file-if-exists=.env --experimental-strip-types server/collector.ts",
@@ -19,6 +21,8 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.15.5",

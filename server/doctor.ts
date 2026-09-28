@@ -1,4 +1,4 @@
-import { getSlot, lookup, providerName, redactedBase, verifyMainnet } from './beacon.ts';
+import { beaconGet, getSlot, lookup, parseValidator, providerName, redactedBase, verifyMainnet } from './beacon.ts';
 import { pool } from './db.ts';
 import { readFile } from 'node:fs/promises';
 const sql = await readFile(new URL('./schema.sql', import.meta.url), 'utf8');
@@ -10,6 +10,11 @@ try {
   for (const state of ['finalized','head'] as const) {
     try { console.log(`${state} slot: ${await getSlot(state)}`); } catch (e) { console.log(`${state} header: ${e instanceof Error ? e.message : 'failed'}`); }
   }
+  try {
+    const control = await beaconGet('/eth/v1/beacon/states/finalized/validators/0');
+    const parsed = parseValidator(control, control?.data?.validator?.pubkey);
+    console.log(`Control validator index 0: ${parsed.finalized ? 'finalized' : 'provisional'} record parsed; lookup path working`);
+  } catch (e) { console.log(`Control validator index 0: ${e instanceof Error ? e.message : 'failed'}`); }
   for (let i=0;i<keys.length;i++) {
     try { const r=await lookup('head',keys[i]); console.log(`Validator ${String(i+1).padStart(2,'0')}: ${r.kind === 'missing' ? 'not found' : `index ${r.value.index}, ${r.value.status}, schema valid`}`); }
     catch(e) { console.log(`Validator ${String(i+1).padStart(2,'0')}: ${e instanceof Error ? e.message : 'lookup failed'}`); }

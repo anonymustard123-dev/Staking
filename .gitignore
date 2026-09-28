@@ -4,3 +4,4 @@ dist/
 .npm-cache/
 *.log
 .docker/
+.local-db/

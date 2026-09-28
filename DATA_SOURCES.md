@@ -1,17 +1,17 @@
 # Data sources and definitions
 
-Verified on **2026-09-28 16:14 UTC**. No API key was used in the read-only checks.
+Verified on **2026-09-28**. No API key was used in the read-only checks.
 
 ## Beacon API
 
-The default is PublicNode's documented public Ethereum Beacon API, `https://ethereum-beacon-api.publicnode.com`. [PublicNode lists Ethereum mainnet and a Beacon API](https://ethereum.publicnode.com/). The [Ethereum Beacon API specification](https://github.com/ethereum/beacon-APIs) defines the state validator lookup, genesis and headers. The public endpoint returned the expected mainnet genesis time `1606824023` and root `0x4b363d…1bfe95`. Head and finalized header calls returned numeric slots. Targeted `/eth/v1/beacon/states/head/validators/{pubkey}` calls returned HTTP 404 `unknown validator` for **each of the three supplied keys**. This proves neither ownership nor inactivity; they may not yet be registered or the provider may not recognize them. The app therefore displays no indices or balances for them.
+The default is PublicNode's documented public Ethereum Beacon API, `https://ethereum-beacon-api.publicnode.com`. [PublicNode lists Ethereum mainnet and a Beacon API](https://ethereum.publicnode.com/). The [Ethereum Beacon API specification](https://github.com/ethereum/beacon-APIs) defines the state validator lookup, genesis and headers. The public endpoint returned the expected mainnet genesis time `1606824023` and root `0x4b363d…1bfe95`. Head and finalized header calls returned numeric slots. A targeted lookup for known validator index `0` returned HTTP 200, and the app's schema parser accepted the real finalized record. Targeted lookups returned HTTP 404 `unknown validator` for **each of the three supplied keys**. This proves neither ownership nor inactivity; they may not yet be registered or the provider may not recognize them. The app therefore displays no indices or balances for them.
 
 The adapter requests each key directly; it never downloads the validator registry. It reads `finalized` and `head` headers, then pins each validator lookup to that header's state root so a moving head cannot give the observation the wrong slot. It stores the response finality flag and slot, and refuses to treat a purported finalized response lacking `finalized=true` as final. Provider data and collection errors remain distinct from the last saved observation. Query URLs are not logged, since a configured provider URL may contain a key.
 
 | Capability | Default adapter | Verified live result |
 | --- | --- | --- |
 | Mainnet identity | Genesis root/time | Passed |
-| Lifecycle, index, balance, effective balance, withdrawal credentials, slashing | Standard targeted state validator lookup | Endpoint works; all three keys returned unknown, so parsing of real records remains unverified |
+| Lifecycle, index, balance, effective balance, withdrawal credentials, slashing | Standard targeted state validator lookup | Live record and schema parsing passed for validator index 0; all three watched keys returned unknown |
 | Head versus finalized | Header and response flag | Header requests passed; validator finality unverified because keys were not found |
 | Duty assignments | Not collected | Unsupported; assignments would not prove participation |
 | Observed participation, proposals, withdrawals | No indexed feed | Unsupported |
@@ -28,4 +28,4 @@ Exact balance units: Beacon API balances are integer Gwei; the app divides by `1
 
 ## Operational limits
 
-Polling defaults to two minutes, with a 60-second minimum. HTTP calls have 10-second timeouts and up to three bounded attempts; `429` honors a capped `Retry-After`. A PostgreSQL advisory lock prevents overlapping jobs; uniqueness by validator/source/state/slot makes repeated observations idempotent. The collector records runs and failures. It does not yet backfill missed intervals or reconcile chain reorganizations beyond retaining separate head and finalized observations. Database persistence across cycles was **not** verified in this workspace because Docker's daemon was unavailable.
+Polling defaults to two minutes, with a 60-second minimum. HTTP calls have 10-second timeouts and up to three bounded attempts; `429` honors a capped `Retry-After`. A PostgreSQL advisory lock prevents overlapping jobs; uniqueness by validator/source/state/slot makes repeated observations idempotent. The collector records runs and failures. It does not yet backfill missed intervals or reconcile chain reorganizations beyond retaining separate head and finalized observations. Docker's daemon was unavailable, so local testing used [PGlite's documented PostgreSQL socket server](https://pglite.dev/docs/pglite-socket) with a persistent data directory. Collection runs remained present across multiple cycles and a database restart; no validator observations could be persisted because all three keys were unknown.
