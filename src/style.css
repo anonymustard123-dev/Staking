@@ -4,3 +4,4 @@
 .watchlistEditor textarea{display:block;width:100%;min-height:150px;resize:vertical;background:#002b48;border:1px solid rgba(145,207,211,.4);border-radius:2px;color:#e4eeee;padding:12px;font:11px 'DM Mono',monospace;line-height:1.6}.editorActions{display:flex;align-items:center;gap:14px;margin-top:14px}.editorActions span{font-size:11px;color:#a8c5ca}@media(max-width:700px){.editorActions{align-items:flex-start;flex-direction:column}}
 .headingActions{display:flex;align-items:center;gap:10px}@media(max-width:700px){.headingActions{align-items:stretch;flex-direction:column}.headingActions button{width:100%}}
 .topactions>.secondary,.headingActions>.secondary{display:none}
+.metric strong{font-size:22px;letter-spacing:-.4px;line-height:1.18;overflow-wrap:anywhere;white-space:normal}
