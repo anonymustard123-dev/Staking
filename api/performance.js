@@ -40,7 +40,9 @@ export default async function handler(req, res) {
       try { return [index, { available: true, data: await fetchAttestations(index, token) }]; }
       catch (error) { return [index, { available: false, error: error instanceof Error ? error.message : 'Rated lookup failed' }]; }
     }));
-    return res.status(200).json({ available: entries.some(([, value]) => value.available), fetchedAt: new Date().toISOString(), metrics: Object.fromEntries(entries) });
+    const available = entries.some(([, value]) => value.available);
+    const firstFailure = entries.find(([, value]) => !value.available)?.[1];
+    return res.status(200).json({ available, reason: available ? undefined : (firstFailure?.error || 'Rated returned no performance records'), fetchedAt: new Date().toISOString(), metrics: Object.fromEntries(entries) });
   } catch (error) {
     return res.status(502).json({ available: false, reason: error instanceof Error ? error.message : 'Performance service failed', metrics: {} });
   }
