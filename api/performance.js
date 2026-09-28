@@ -33,6 +33,7 @@ async function fetchAttestations(index, token) {
   const response = await fetch(`https://api.rated.network/v1/eth/validators/${index}/attestations?granularity=day&limit=1&sortOrder=desc`, {
     headers: { authorization: `Bearer ${token}`, 'x-rated-network': 'mainnet', accept: 'application/json' },
   });
+  if (response.status === 401) throw new Error('Rated access rejected: enable a Rated API plan or Compute Unit allocation in Rated Console');
   if (!response.ok) throw new Error(`Rated returned HTTP ${response.status}`);
   return metricRecord(await response.json());
 }
