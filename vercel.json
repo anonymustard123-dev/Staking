@@ -1,0 +1,7 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "functions": {
+    "api/snapshot.ts": { "maxDuration": 15 }
+  }
+}
