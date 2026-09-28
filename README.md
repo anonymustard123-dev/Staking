@@ -8,6 +8,8 @@ This repository is ready to deploy on Vercel Hobby with **no environment variabl
 
 After this commit reaches GitHub, import the repository in Vercel or redeploy its existing project. Vercel uses the committed `vercel.json`; leave the build command as `npm run build` and output directory as `dist`. Open **Validators**, replace the three entries with the correct public keys, and click **Save watchlist**. The browser keeps that watchlist locally, so no redeploy is needed after changing keys.
 
+Use **Add public live examples** on the Validators screen to add three clearly labeled, unrelated mainnet validators. They let you verify that the deployed app is receiving live values while your own validators are still waiting to enter Beacon-chain state. Remove them at any time by editing and saving the watchlist.
+
 Hobby cannot provide the two-minute persistent collector used by the local version. The deployed view is current state on page load and refresh; it deliberately does not claim history, reward attribution, duty performance, or incidents.
 
 ## Start
