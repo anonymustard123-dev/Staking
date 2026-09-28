@@ -1,5 +1,12 @@
 const indexPattern = /^\d+$/;
 
+function ratedToken(value) {
+  if (typeof value !== 'string') return '';
+  let token = value.trim().replace(/^Bearer\s+/i, '');
+  if ((token.startsWith('"') && token.endsWith('"')) || (token.startsWith("'") && token.endsWith("'"))) token = token.slice(1, -1);
+  return token.replace(/[\r\n]/g, '').trim();
+}
+
 function requestedIndices(value) {
   if (typeof value !== 'string') return [];
   try {
@@ -32,7 +39,7 @@ async function fetchAttestations(index, token) {
 
 export default async function handler(req, res) {
   try {
-    const token = process.env.RATED_API_KEY?.trim().replace(/^Bearer\s+/i, '');
+    const token = ratedToken(process.env.RATED_API_KEY);
     const indices = requestedIndices(req.query?.indices);
     if (!token) return res.status(200).json({ available: false, reason: 'RATED_API_KEY is not configured', metrics: {} });
     if (!indices.length) return res.status(400).json({ available: false, reason: 'No validator indices were supplied', metrics: {} });
