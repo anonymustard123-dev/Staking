@@ -1,5 +1,5 @@
 import { pool } from './db.ts';
-import { getSlot, lookup, providerName, verifyMainnet } from './beacon.ts';
+import { getState, lookup, providerName, verifyMainnet } from './beacon.ts';
 const interval = Math.max(60000, Number(process.env.POLL_INTERVAL_MS || 120000));
 let running = false;
 export async function collectOnce() {
@@ -21,10 +21,10 @@ export async function collectOnce() {
       await verifyMainnet();
       const keys = (await client.query('SELECT pubkey FROM watchlist ORDER BY created_at')).rows.map(r => r.pubkey as string);
       for (const state of ['finalized', 'head'] as const) {
-        const slot = await getSlot(state);
+        const {slot,stateRoot} = await getState(state);
         for (const key of keys) {
           try {
-            const result = await lookup(state, key);
+            const result = await lookup(stateRoot, key);
             if (result.kind === 'missing') { missing++; continue; }
             const v = result.value;
             if (state === 'finalized' && !v.finalized) throw new Error('Provider did not mark finalized response as finalized');

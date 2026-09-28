@@ -53,14 +53,18 @@ export async function verifyMainnet() {
   const j = await beaconGet('/eth/v1/beacon/genesis');
   if (j?.data?.genesis_validators_root !== MAINNET_GENESIS_ROOT || j?.data?.genesis_time !== '1606824023') throw new Error('Beacon provider is not Ethereum mainnet');
 }
-export async function getSlot(stateId: 'head'|'finalized'): Promise<string> {
+export async function getState(stateId: 'head'|'finalized'): Promise<{slot:string;stateRoot:string}> {
   const j = await beaconGet(`/eth/v1/beacon/headers/${stateId}`);
   const slot = j?.data?.header?.message?.slot;
-  if (!safeInteger(slot)) throw new Error(`Missing ${stateId} header slot`);
-  return slot;
+  const stateRoot = j?.data?.header?.message?.state_root;
+  if (!safeInteger(slot) || typeof stateRoot !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(stateRoot)) throw new Error(`Invalid ${stateId} header`);
+  if (stateId === 'finalized' && j.finalized !== true) throw new Error('Provider did not mark finalized header as finalized');
+  return {slot,stateRoot};
 }
-export async function lookup(stateId: 'head'|'finalized', pubkey: string): Promise<Lookup> {
+export async function getSlot(stateId: 'head'|'finalized') { return (await getState(stateId)).slot; }
+export async function lookup(stateId: 'head'|'finalized'|string, pubkey: string): Promise<Lookup> {
   if (!KEY_RE.test(pubkey)) throw new Error('Invalid validator public key');
+  if (!['head','finalized'].includes(stateId) && !/^0x[0-9a-fA-F]{64}$/.test(stateId)) throw new Error('Invalid state identifier');
   const j = await beaconGet(`/eth/v1/beacon/states/${stateId}/validators/${pubkey}`);
   if (j?.missing) return { kind: 'missing' };
   return { kind: 'found', value: parseValidator(j, pubkey) };
