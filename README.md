@@ -4,11 +4,11 @@ Ethereum mainnet validator watchlist and evidence-first dashboard. The three sup
 
 ## Vercel Hobby deployment
 
-This repository is ready to deploy on Vercel Hobby with **no environment variables, database, cron job, or paid API**. The included `/api/snapshot` serverless function reads the public mainnet Beacon API whenever the page opens or **Refresh live data** is selected. It shows current lifecycle status, consensus and effective balances, withdrawal credentials, and slashing state for valid public keys.
+This repository is ready to deploy on Vercel Hobby with **no environment variables, database, cron job, or paid API**. The browser reads the public mainnet Beacon API whenever the page opens or **Refresh live data** is selected. It shows current lifecycle status, consensus and effective balances, withdrawal credentials, and slashing state for valid public keys.
 
 After this commit reaches GitHub, import the repository in Vercel or redeploy its existing project. Vercel uses the committed `vercel.json`; leave the build command as `npm run build` and output directory as `dist`. Open **Validators**, replace the three entries with the correct public keys, and click **Save watchlist**. The browser keeps that watchlist locally, so no redeploy is needed after changing keys.
 
-Use **Add public live examples** on the Validators screen to add three clearly labeled, unrelated mainnet validators. They let you verify that the deployed app is receiving live values while your own validators are still waiting to enter Beacon-chain state. Remove them at any time by editing and saving the watchlist.
+The default watchlist includes three clearly labeled **Demo validator** entries. They are unrelated, active Ethereum mainnet validators and display real live values through the same path as every watched key. They let you verify the dashboard while your own validators are still waiting to enter Beacon-chain state. Remove them at any time by editing and saving the watchlist.
 
 Hobby cannot provide the two-minute persistent collector used by the local version. The deployed view is current state on page load and refresh; it deliberately does not claim history, reward attribution, duty performance, or incidents.
 
