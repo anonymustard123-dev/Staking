@@ -1,7 +1,7 @@
 const keyPattern = /^0x[a-f0-9]{96}$/;
 
 function config() {
-  const url = process.env.SUPABASE_URL?.trim().replace(/\/$/, '');
+  const url = process.env.SUPABASE_URL?.trim().replace(/\/$/, '').replace(/\/rest\/v1$/i, '');
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   return url && key ? { url, key } : null;
 }

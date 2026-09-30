@@ -21,7 +21,7 @@ SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
 ```
 
-The service-role key is only read by `api/history.js` on Vercel and is never sent to the browser. Row-level security remains enabled with no browser policies. With the variables absent, the dashboard keeps its existing browser-local history; with them present, it writes to the dedicated `staking_monitor_snapshots` table and reads that shared history on refresh.
+`SUPABASE_URL` accepts either the normal project URL or the copied Data API URL ending in `/rest/v1/`. The service-role key is only read by `api/history.js` on Vercel and is never sent to the browser. Row-level security remains enabled with no browser policies. With the variables absent, the dashboard keeps its existing browser-local history; with them present, it writes to the dedicated `staking_monitor_snapshots` table and reads that shared history on refresh.
 
 ## Start
 
