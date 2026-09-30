@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       await supabase('staking_monitor_snapshots?on_conflict=source_slot', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(value) }, settings);
       return res.status(201).json({ configured: true });
     }
-    const records = await supabase('staking_monitor_snapshots?select=observed_at,source_slot,finalized_epoch,consensus_balance_eth,execution_wallet_balance_eth,eth_usd,validator_snapshots&order=observed_at.asc&limit=288', { method: 'GET' }, settings);
+    const records = await supabase('staking_monitor_snapshots?select=observed_at,source_slot,finalized_epoch,consensus_balance_eth,execution_wallet_balance_eth,eth_usd,validator_snapshots&order=observed_at.asc&limit=10000', { method: 'GET' }, settings);
     const snapshots = (records || []).map(item => ({ at: item.observed_at, sourceSlot: Number(item.source_slot), finalizedEpoch: item.finalized_epoch === null ? null : Number(item.finalized_epoch), consensus: Number(item.consensus_balance_eth), wallet: Number(item.execution_wallet_balance_eth), usd: (Number(item.consensus_balance_eth) + Number(item.execution_wallet_balance_eth)) * Number(item.eth_usd || 0), price: Number(item.eth_usd || 0), balances: item.validator_snapshots || {} }));
     return res.status(200).json({ configured: true, snapshots });
   } catch (error) {

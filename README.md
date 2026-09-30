@@ -21,7 +21,7 @@ SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
 ```
 
-`SUPABASE_URL` accepts either the normal project URL or the copied Data API URL ending in `/rest/v1/`. The service-role key is only read by `api/history.js` on Vercel and is never sent to the browser. Row-level security remains enabled with no browser policies. With the variables absent, the dashboard keeps its existing browser-local history; with them present, it writes to the dedicated `staking_monitor_snapshots` table and reads that shared history on refresh.
+`SUPABASE_URL` accepts either the normal project URL or the copied Data API URL ending in `/rest/v1/`. The service-role key is only read by `api/history.js` on Vercel and is never sent to the browser. Row-level security remains enabled with no browser policies. The dashboard writes to the dedicated `staking_monitor_snapshots` table and reads shared history on refresh; it does not retain browser-local snapshots.
 
 ## Start
 
@@ -59,7 +59,7 @@ npm run collector
 
 `BEACONCHAIN_API_KEY` and `FIGMENT_API_KEY` are reserved for future authorized indexed feeds. Setting them currently does not enable rewards. See [DATA_SOURCES.md](DATA_SOURCES.md) for tested coverage and limits.
 
-In Vercel Hobby mode, the app reads upstream state on each page load or manual refresh and stores no observation history. The optional local collector writes observations to PostgreSQL; its UI reads saved snapshots and refreshes every 30 seconds. A manual local refresh runs one collection cycle and is limited to once per minute per API process. `POLL_INTERVAL_MS` controls the worker interval, with a 60-second minimum. `STALE_AFTER_MS` controls the stale marker and alert, also with a 60-second minimum; ten minutes is the prototype default. For durable history, run `npm run collector` as a separate persistent worker.
+In Vercel Hobby mode, the app reads upstream state on each page load, manual refresh, and while an open dashboard is refreshing every two minutes. Each successful read is stored in Supabase. This does not create background observations while nobody has the dashboard open. The optional local collector writes observations to PostgreSQL; its UI reads saved snapshots and refreshes every 30 seconds. A manual local refresh runs one collection cycle and is limited to once per minute per API process. `POLL_INTERVAL_MS` controls the worker interval, with a 60-second minimum. `STALE_AFTER_MS` controls the stale marker and alert, also with a 60-second minimum; ten minutes is the prototype default.
 
 ## What makes the live view useful
 
