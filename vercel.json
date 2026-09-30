@@ -3,6 +3,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/snapshot.ts": { "maxDuration": 15 },
-    "api/financial.js": { "maxDuration": 15 }
+    "api/financial.js": { "maxDuration": 15 },
+    "api/history.js": { "maxDuration": 15 }
   }
 }

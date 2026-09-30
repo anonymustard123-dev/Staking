@@ -10,7 +10,18 @@ After this commit reaches GitHub, import the repository in Vercel or redeploy it
 
 The default watchlist includes three clearly labeled **Demo validator** entries. They are unrelated, active Ethereum mainnet validators and display real live values through the same path as every watched key. They let you verify the dashboard while your own validators are still waiting to enter Beacon-chain state. Remove them at any time by editing and saving the watchlist.
 
-Hobby cannot provide the two-minute persistent collector used by the local version. The deployed view is current state on page load and refresh; it deliberately does not claim history, reward attribution, duty performance, or incidents.
+Hobby cannot run a continuous collector. The deployed view reads current state on page load and refresh. It can optionally save one fleet snapshot per Beacon slot to the BOW Supabase project whenever a browser refreshes the dashboard.
+
+## Shared BOW Supabase history
+
+To share durable fleet history across browsers, run [`supabase/staking-monitor-snapshots.sql`](supabase/staking-monitor-snapshots.sql) once in the BOW Supabase project's SQL Editor. Then add these **server-side** variables in the Staking Vercel project and redeploy:
+
+```text
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+```
+
+The service-role key is only read by `api/history.js` on Vercel and is never sent to the browser. Row-level security remains enabled with no browser policies. With the variables absent, the dashboard keeps its existing browser-local history; with them present, it writes to the dedicated `staking_monitor_snapshots` table and reads that shared history on refresh.
 
 ## Start
 
