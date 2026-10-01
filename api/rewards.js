@@ -11,8 +11,15 @@ async function beaconchaPerformance(ids) {
   if (!key) return { available: false, reason: 'Indexed reward source is not configured.', validators: {} };
   try {
     const query = `apikey=${encodeURIComponent(key)}&api_key=${encodeURIComponent(key)}`, indexList = ids.join(',');
-    const request = path => fetch(`${beaconchaBase}${path}${path.includes('?') ? '&' : '?'}${query}`, { headers: { accept: 'application/json', authorization: `Bearer ${key}`, 'x-api-key': key }, signal: AbortSignal.timeout(12000) });
-    const [performanceResponse, proposalsResponse, syncResponse] = await Promise.all([request(`/validator/${indexList}/performance`), request(`/validator/${indexList}/proposals`), request('/sync_committee/latest')]);
+    // The trial key is limited to one request per second. Keep each request
+    // short as well, so a slow indexed provider cannot exhaust Vercel's
+    // function window before the public Beacon reward response is returned.
+    const request = path => fetch(`${beaconchaBase}${path}${path.includes('?') ? '&' : '?'}${query}`, { headers: { accept: 'application/json', authorization: `Bearer ${key}`, 'x-api-key': key }, signal: AbortSignal.timeout(3500) });
+    const performanceResponse = await request(`/validator/${indexList}/performance`);
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    const proposalsResponse = await request(`/validator/${indexList}/proposals`);
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    const syncResponse = await request('/sync_committee/latest');
     if (!performanceResponse.ok) throw new Error(performanceResponse.status === 401 || performanceResponse.status === 403 ? 'Indexed provider rejected its API key.' : `Indexed provider returned HTTP ${performanceResponse.status}`);
     const performance = await performanceResponse.json(), proposals = proposalsResponse.ok ? await proposalsResponse.json() : { data: [] }, sync = syncResponse.ok ? await syncResponse.json() : { data: { validators: [] } };
     const proposalCount = Object.fromEntries(ids.map(id => [id, (proposals?.data || []).filter(item => String(item?.proposer) === id).length]));
