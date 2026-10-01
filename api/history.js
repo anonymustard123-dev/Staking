@@ -22,7 +22,9 @@ function snapshot(value) {
 async function supabase(path, init, settings) {
   const response = await fetch(`${settings.url}/rest/v1/${path}`, { ...init, headers: { apikey: settings.key, Authorization: `Bearer ${settings.key}`, 'Content-Type': 'application/json', ...(init.headers || {}) } });
   if (!response.ok) throw new Error(`Supabase returned HTTP ${response.status}`);
-  return response.status === 204 ? null : response.json();
+  // Supabase returns an empty 201 response for POST requests with
+  // `Prefer: return=minimal`. Treat that as a successful proxy write.
+  return response.status === 204 || init.method === 'POST' ? null : response.json();
 }
 
 export default async function handler(req, res) {
