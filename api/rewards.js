@@ -1,5 +1,5 @@
 const base = 'https://ethereum-beacon-api.publicnode.com';
-const beaconchaBase = 'https://beaconcha.in/api/v1';
+const beaconchaBase = 'https://api.beaconcha.in/v2';
 
 function indices(value) {
   if (typeof value !== 'string') return [];
@@ -10,27 +10,40 @@ async function beaconchaPerformance(ids) {
   const key = process.env.BEACONCHA_API_KEY || process.env.BEACONCHAIN_API_KEY || process.env.BEACONCHA_KEY;
   if (!key) return { available: false, reason: 'Indexed reward source is not configured.', validators: {} };
   try {
-    const query = `apikey=${encodeURIComponent(key)}&api_key=${encodeURIComponent(key)}`, indexList = ids.join(',');
-    // The trial key is limited to one request per second. Keep each request
-    // short as well, so a slow indexed provider cannot exhaust Vercel's
-    // function window before the public Beacon reward response is returned.
-    const request = path => fetch(`${beaconchaBase}${path}${path.includes('?') ? '&' : '?'}${query}`, { headers: { accept: 'application/json', authorization: `Bearer ${key}`, 'x-api-key': key }, signal: AbortSignal.timeout(3500) });
-    const performanceResponse = await request(`/validator/${indexList}/performance`);
-    await new Promise(resolve => setTimeout(resolve, 1100));
-    const proposalsResponse = await request(`/validator/${indexList}/proposals`);
-    await new Promise(resolve => setTimeout(resolve, 1100));
-    const syncResponse = await request('/sync_committee/latest');
+    // Console-issued keys are JWT bearer tokens for Beaconcha's current v2 API.
+    // The earlier v1 endpoints use a different legacy key format and reject them.
+    const performanceResponse = await fetch(`${beaconchaBase}/validators/performance-list`, {
+      method: 'POST',
+      headers: { accept: 'application/json', 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: JSON.stringify({ validator: { validator_identifiers: ids.map(Number) } }),
+      signal: AbortSignal.timeout(9000)
+    });
     if (!performanceResponse.ok) throw new Error(performanceResponse.status === 401 || performanceResponse.status === 403 ? 'Indexed provider rejected its API key.' : `Indexed provider returned HTTP ${performanceResponse.status}`);
-    const performance = await performanceResponse.json(), proposals = proposalsResponse.ok ? await proposalsResponse.json() : { data: [] }, sync = syncResponse.ok ? await syncResponse.json() : { data: { validators: [] } };
-    const proposalCount = Object.fromEntries(ids.map(id => [id, (proposals?.data || []).filter(item => String(item?.proposer) === id).length]));
-    const committee = new Set((sync?.data?.validators || []).map(String));
-    const validators = Object.fromEntries((performance?.data || []).map(item => {
-      const index = String(item?.validatorindex ?? item?.validator_index ?? '');
-      return [index, { consensus1dEth: Number(item?.performance1d || 0) / 1e9, proposalCount: proposalCount[index] || 0, syncAssigned: committee.has(index) }];
+    const performance = await performanceResponse.json();
+    const records = [performance?.data, performance?.results, performance?.validators, performance?.items, performance?.data?.validators, performance?.data?.results].find(Array.isArray) || [];
+    const validators = Object.fromEntries(records.map((item, position) => {
+      // The v2 list response is ordered by the requested identifiers. Keep
+      // that stable fallback for response variants that omit a duplicate index.
+      const index = String(item?.validator_index ?? item?.validatorIndex ?? item?.index ?? item?.validator?.index ?? ids[position] ?? '');
+      const score = item?.beaconscore ?? item?.beacon_score ?? item?.performance?.beaconscore ?? {};
+      const income = item?.performance1d ?? item?.performance_1d ?? item?.rewards?.consensus_1d;
+      const proposals = item?.proposal_count ?? item?.proposals;
+      return [index, {
+        consensus1dEth: Number.isFinite(Number(income)) ? Number(income) / 1e9 : null,
+        proposalCount: Number.isFinite(Number(proposals)) ? Number(proposals) : null,
+        syncAssigned: item?.sync_assigned ?? item?.syncAssigned ?? null,
+        beaconScore: Number(score?.total ?? score ?? NaN),
+        attestationScore: Number(score?.attestation ?? NaN),
+        proposalScore: Number(score?.proposal ?? NaN),
+        syncScore: Number(score?.sync_committee ?? score?.syncCommittee ?? NaN)
+      }];
     }).filter(([index]) => /^\d+$/.test(index)));
     return { available: true, validators };
   } catch (error) {
-    return { available: false, reason: error instanceof Error && error.message === 'Indexed provider rejected its API key.' ? error.message : 'Indexed provider is temporarily unavailable.', validators: {} };
+    const message = error instanceof Error ? error.message : '';
+    if (message === 'Indexed provider rejected its API key.' || /^Indexed provider returned HTTP \d+$/.test(message)) return { available: false, reason: message, validators: {} };
+    if (/timed out|timeout/i.test(message)) return { available: false, reason: 'Indexed provider timed out.', validators: {} };
+    return { available: false, reason: 'Indexed provider connection failed.', validators: {} };
   }
 }
 
