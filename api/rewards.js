@@ -1,34 +1,27 @@
 const base = 'https://ethereum-beacon-api.publicnode.com';
-const beaconchaBase = 'https://api.beaconcha.in/v2';
+const beaconchaBase = 'https://beaconcha.in/api/v1';
 
 function indices(value) {
   if (typeof value !== 'string') return [];
   return [...new Set(value.split(',').filter(item => /^\d+$/.test(item) && Number.isSafeInteger(Number(item))))].slice(0, 50);
 }
 
-function score(value) { const numeric = Number(value); return Number.isFinite(numeric) ? numeric : null; }
-function performanceRows(payload) {
-  const candidates = [payload?.data, payload?.validators, payload?.data?.validators, payload?.data?.data];
-  const items = candidates.find(Array.isArray) || [];
-  return Object.fromEntries(items.map(item => {
-    const index = String(item?.validator_index ?? item?.index ?? item?.validator?.index ?? '');
-    const details = item?.beaconscore ?? item?.beacon_score ?? item?.performance?.beaconscore ?? item?.performance ?? {};
-    return [index, { syncScore: score(details?.sync_committee ?? details?.sync), proposalScore: score(details?.proposal ?? details?.proposals) }];
-  }).filter(([index]) => /^\d+$/.test(index)));
-}
-
 async function beaconchaPerformance(ids) {
   const key = process.env.BEACONCHA_API_KEY;
   if (!key) return { available: false, reason: 'Indexed reward source is not configured.', validators: {} };
   try {
-    const response = await fetch(`${beaconchaBase}/validators/performance-list`, {
-      method: 'POST',
-      headers: { accept: 'application/json', 'content-type': 'application/json', authorization: `Bearer ${key}`, 'x-api-key': key },
-      body: JSON.stringify({ validator: { validator_identifiers: ids.map(Number) } }),
-      signal: AbortSignal.timeout(12000)
-    });
-    if (!response.ok) throw new Error(`Indexed reward source returned HTTP ${response.status}`);
-    return { available: true, validators: performanceRows(await response.json()) };
+    const query = `apikey=${encodeURIComponent(key)}`, indexList = ids.join(',');
+    const request = path => fetch(`${beaconchaBase}${path}${path.includes('?') ? '&' : '?'}${query}`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(12000) });
+    const [performanceResponse, proposalsResponse, syncResponse] = await Promise.all([request(`/validator/${indexList}/performance`), request(`/validator/${indexList}/proposals`), request('/sync_committee/latest')]);
+    if (!performanceResponse.ok) throw new Error(`Indexed reward source returned HTTP ${performanceResponse.status}`);
+    const performance = await performanceResponse.json(), proposals = proposalsResponse.ok ? await proposalsResponse.json() : { data: [] }, sync = syncResponse.ok ? await syncResponse.json() : { data: { validators: [] } };
+    const proposalCount = Object.fromEntries(ids.map(id => [id, (proposals?.data || []).filter(item => String(item?.proposer) === id).length]));
+    const committee = new Set((sync?.data?.validators || []).map(String));
+    const validators = Object.fromEntries((performance?.data || []).map(item => {
+      const index = String(item?.validatorindex ?? item?.validator_index ?? '');
+      return [index, { consensus1dEth: Number(item?.performance1d || 0) / 1e9, proposalCount: proposalCount[index] || 0, syncAssigned: committee.has(index) }];
+    }).filter(([index]) => /^\d+$/.test(index)));
+    return { available: true, validators };
   } catch (error) {
     return { available: false, reason: error instanceof Error ? error.message : 'Indexed reward source failed.', validators: {} };
   }
