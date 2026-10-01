@@ -7,13 +7,13 @@ function indices(value) {
 }
 
 async function beaconchaPerformance(ids) {
-  const key = process.env.BEACONCHA_API_KEY;
+  const key = process.env.BEACONCHA_API_KEY || process.env.BEACONCHAIN_API_KEY || process.env.BEACONCHA_KEY;
   if (!key) return { available: false, reason: 'Indexed reward source is not configured.', validators: {} };
   try {
-    const query = `apikey=${encodeURIComponent(key)}`, indexList = ids.join(',');
-    const request = path => fetch(`${beaconchaBase}${path}${path.includes('?') ? '&' : '?'}${query}`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(12000) });
+    const query = `apikey=${encodeURIComponent(key)}&api_key=${encodeURIComponent(key)}`, indexList = ids.join(',');
+    const request = path => fetch(`${beaconchaBase}${path}${path.includes('?') ? '&' : '?'}${query}`, { headers: { accept: 'application/json', authorization: `Bearer ${key}`, 'x-api-key': key }, signal: AbortSignal.timeout(12000) });
     const [performanceResponse, proposalsResponse, syncResponse] = await Promise.all([request(`/validator/${indexList}/performance`), request(`/validator/${indexList}/proposals`), request('/sync_committee/latest')]);
-    if (!performanceResponse.ok) throw new Error(`Indexed reward source returned HTTP ${performanceResponse.status}`);
+    if (!performanceResponse.ok) throw new Error(performanceResponse.status === 401 || performanceResponse.status === 403 ? 'Indexed provider rejected its API key.' : `Indexed provider returned HTTP ${performanceResponse.status}`);
     const performance = await performanceResponse.json(), proposals = proposalsResponse.ok ? await proposalsResponse.json() : { data: [] }, sync = syncResponse.ok ? await syncResponse.json() : { data: { validators: [] } };
     const proposalCount = Object.fromEntries(ids.map(id => [id, (proposals?.data || []).filter(item => String(item?.proposer) === id).length]));
     const committee = new Set((sync?.data?.validators || []).map(String));
@@ -23,7 +23,7 @@ async function beaconchaPerformance(ids) {
     }).filter(([index]) => /^\d+$/.test(index)));
     return { available: true, validators };
   } catch (error) {
-    return { available: false, reason: error instanceof Error ? error.message : 'Indexed reward source failed.', validators: {} };
+    return { available: false, reason: error instanceof Error && error.message === 'Indexed provider rejected its API key.' ? error.message : 'Indexed provider is temporarily unavailable.', validators: {} };
   }
 }
 
