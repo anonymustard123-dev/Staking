@@ -8,6 +8,7 @@ import './validator-import.css';
 import './recovery.css';
 import './chart-axes.css';
 import './rewards.css';
+import './validator-rewards.css';
 
 type Watch = { name: string; pubkey: string; group: 'Your fleet' | 'Demo validators' };
 type Validator = Watch & { index: string | null; status: string | null; balance: string | null; effective: string | null; credentials: string | null; slashed: boolean | null; observedAt: string | null; freshness: 'fresh' | 'not_found' | 'failed' | 'loading' };
@@ -72,7 +73,7 @@ function ValidatorRewardPanel({ row, epoch }: { row: Validator; epoch: number | 
   const [result, setResult] = useState<ConsensusRewards>({ available: false, reason: 'Loading verified consensus rewards…' });
   useEffect(() => { let current = true; void consensusRewards(indexKey ? indexKey.split(',') : [], epoch).then(value => { if (current) setResult(value); }).catch(cause => { if (current) setResult({ available: false, reason: cause instanceof Error ? cause.message : 'Consensus rewards are unavailable.' }); }); return () => { current = false; }; }, [indexKey, epoch]);
   const reward = row.index ? result.rewards?.[row.index] : undefined;
-  return <section className="vw-panel rw-validator"><div className="vw-panel-head"><div><p>VERIFIED CONSENSUS REWARD</p><h2>Latest finalized attestation</h2></div><span>{result.available && result.epoch !== undefined ? `Epoch ${result.epoch}` : 'Loading'}</span></div><div className="rw-validator-body"><div><small>ATTESTATION REWARD</small><b>{reward ? `${reward.attestationEth.toFixed(9)} ETH` : '—'}</b><span>{reward ? 'Head, target, source, and inactivity components' : result.available ? 'No reward record returned for this epoch' : result.reason}</span></div><dl><dt>Sync committee</dt><dd>Not collected yet</dd><dt>Block proposal</dt><dd>Not collected yet</dd><dt>Execution reward</dt><dd>Not collected yet</dd></dl></div></section>;
+  return <section className="vw-panel vr-reward"><div className="vw-panel-head"><div><p>VERIFIED CONSENSUS REWARD</p><h2>Latest finalized attestation</h2></div><span>{result.available && result.epoch !== undefined ? `Epoch ${result.epoch}` : 'Loading reward data'}</span></div><div className="vr-reward-grid"><div className="vr-reward-value"><small>ATTESTATION OUTCOME</small><b>{reward ? `${reward.attestationEth.toFixed(9)} ETH` : '—'}</b><span>{reward ? 'Verified consensus reward for this epoch' : result.available ? 'No attestation result returned for this epoch' : result.reason}</span></div><div className="vr-coverage"><small>REWARD COVERAGE</small><div><i className={reward ? 'ready' : ''} />Attestation <b>{reward ? 'Verified' : 'Awaiting data'}</b></div><div><i />Sync committee <b>Collector pending</b></div><div><i />Block proposal <b>Collector pending</b></div><div><i />Execution reward <b>Collector pending</b></div></div></div><p className="vr-note">Only protocol-confirmed values are shown. Execution wallet transfers are not counted as validator rewards.</p></section>;
 }
 
 function ValidatorWorkspace({ row, chain, financial: data, snapshots, onBack }: { row: Validator; chain: Chain | null; financial: Financial; snapshots: Snapshot[]; onBack: () => void }) {
